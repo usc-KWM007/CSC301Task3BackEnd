@@ -26,13 +26,21 @@ let db = {
      * @param {Date} data.modified_at - The date when the task was last modified.
      * @returns {Promise<Object>} - The newly created record.
      */
-    create: async(data) => {
-        console.log("creating");
-        const text = 'INSERT INTO todos(task, completed, active, modified_at) VALUES($1, $2, $3, $4) RETURNING *'
-        const values = [data.task, data.completed, data.active, data.modified_at];
+    createEmployee: async(data) => {
+        console.log("creating employee");
+        const text = 'INSERT INTO employees(empid, email, password, firstname, lastname, role) VALUES($1, $2, $3, $4, $5, $6) RETURNING *'
+        const values = [data.empid, data.email, data.password, data.firstname, data.lastname, data.role];
         const res = await sql.query(text, values)
         console.log(res);
         return res;
+    },
+    checkEmployee: async(data) => {
+        console.log("checking employee");
+        const text = 'SELECT EXISTS(SELECT 1 FROM employees WHERE email=$1 AND password = $2)'
+        const values = [data.email, data.password];
+        const res = await sql.query(text, values)
+        let exists = (res.rows[0].exists);
+        return exists;
     },
     /**
      * Updates an existing record in the database.

@@ -1,14 +1,17 @@
 version: '3.9'
 services:
-  dbPostgres:
+
+  postgresServer:
     image: postgres
     restart: always
     ports:
       - 5432:5432
+    volumes:
+      - ./testFolder:/usr/src/app
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: pass
-      POSTGRES_DB: taskmanagement
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
 
   adminer:
     image: adminer

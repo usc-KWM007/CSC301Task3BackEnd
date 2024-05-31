@@ -1,5 +1,0 @@
-[
-    {"taskID":0, "taskName":"Make Team Chart", "taskDescription":"Make the chart"},
-    {"taskID":1, "taskName":"Cleanup Code", "taskDescription":"Clean up the code to 20 lines"},
-    {"taskID":2, "taskName":"Submit the Code", "taskDescription":"Submit the code by Friday"}
-]

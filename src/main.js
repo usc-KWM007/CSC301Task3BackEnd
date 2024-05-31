@@ -1,90 +1,142 @@
-const  tasks = require('./testData/tasks.json');
 const express = require('express');
+const cookieParser = require("cookie-parser");
 const app = express();
 const dbController = require('./db/dbController.js');
 const { v4: uuidv4 } = require('uuid');
 const cors = require("cors")
-
+const { generateUUID, checkPassword, encryptPassword } = require('./db/encryption.js');
+require('dotenv').config();
+const jwt = require('jsonwebtoken');
+app.use(cookieParser(process.env.JWT_SECRET_KEY));
 
 app.use(express.json()); // Middleware to parse JSON bodies
-app.use(cors()); //configure to only except few urls?
+app.use(cors(
+  {origin: 'http://localhost:5173', 
+credentials: true}
+)); //configure to only except few urls?
 
-// Get list of tasks
-app.get('/v1/tasks', (req, res) => {
-  res.json(tasks);
+//used to validate the token - needs to be done on all requests except login signup and signout
+const checkToken = (req) => {
+  try {
+    let cookies = req.cookies
+    jwt.verify(cookies.token, process.env.JWT_SECRET_KEY)
+    return true
+  } catch {
+    return false
+  }
+}
+
+app.get('/addTask', async(req,res) =>{
+  let employees = await dbController.getEmployeeIdNames()
+  res.send(employees);
+}
+);
+
+app.post('/addTask', async(req,res) =>{
+  console.log('Got a POST request');
+  console.log("heelloo")
+  console.log(req.body.taskname)
+    let newUuid = generateUUID();
+    let data = {
+      taskid: newUuid,
+      taskname: req.body.taskname,
+      taskdescription: req.body.taskdescription,
+      tasklocation: req.body.tasklocation,
+      taskduedate: req.body.taskduedate,
+      taskEmployees: req.body.taskEmployees
+      
+    };
+    await dbController.addTasks(data)
+    res.send('task added');
+  
+    //res.status(400).send('Invalid request body');
+  }
+  
+);
+
+app.get('/dashboard', async(req,res) =>{
+  try{
+    await dbController.getTasks();
+    
+  } catch {
+
+  }
+
 });
 
-// Add a new task
-app.post('/v1/tasks', (req, res) => {
-  const task = { taskID: tasks.length + 1, taskName: req.body.taskName, taskDescription: req.body.taskDescription };
-  tasks.push(task);
-  res.status(201).json(task);
-  console.log(tasks)
-});
 
 app.post('/signup', async (req, res) => {
   console.log('Got a POST request');
   try {
-    
     //const validatedData = await todoSchema.validateAsync(req.body);
-    
     /** @type {Types.TaskData} */
-    /*let data = {
-      task: validatedData.task,
-      completed: validatedData.completed,
-      active: validatedData.active,
-      modified_at: validatedData.modified_at
-    };*/
-
+    let newUuid = generateUUID();
     let data = {
-      empid: uuidv4(),
+      empid: newUuid,
       email: req.body.email,
-      password: req.body.password,
+      password: encryptPassword(req.body.password, newUuid),
       firstname: req.body.firstname,
       lastname: req.body.lastname,
       role: req.body.role
     };
-
-    console.log(data); 
     await dbController.createEmployee(data);
-    res.send('Cool, it\'s saved 🤞');
+    res.send('You are registered');
   } catch (error) {
     console.error(error);
     res.status(400).send('Invalid request body');
   }
 });
 
-app.post('/login', async (req, res) => {
-  console.log('Got a POST request');
-  try {
-    
-    //const validatedData = await todoSchema.validateAsync(req.body);
-    
-    /** @type {Types.TaskData} */
-    /*let data = {
-      task: validatedData.task,
-      completed: validatedData.completed,
-      active: validatedData.active,
-      modified_at: validatedData.modified_at
-    };*/
 
+
+app.post('/login', async (req, res) => {
+  console.log('Got a POST requests');
+  try {
+
+    /** @type {Types.TaskData} */
     let data = {
       email: req.body.email,
       password: req.body.password,
     };
 
-    console.log(data); 
-    let dbResponse = await dbController.checkEmployee(data);
-    if(dbResponse){
-      res.send('Cool, it\'s you are allowed 🤞');
-    }else{
-      res.send("You are not allowed!") 
+    //check if email exists
+    let dbResponse = await dbController.checkEmployeeEmail(data);
+    if (dbResponse) {
+      //get the uuid and encrypted password
+      let employeeCredentials = await dbController.getEmployeeCredentials(data);
+      //check plain password to encrypted password
+      let passwordCheck = checkPassword(data.password, employeeCredentials.empid, employeeCredentials.password)
+      if (passwordCheck) {
+        //generate and send JWT Token
+        let email = data.email;
+        const token = jwt.sign({ email }, process.env.JWT_SECRET_KEY);
+        res.cookie("token", token, { expiresIn: '1h'});
+        res.send(token);
+        console.log("Someone Logged in")
+
+      } else {
+        res.send("Incorrect Password")
+      }
+    } else {
+      res.send("Email does not exists")
     }
-    
   } catch (error) {
     console.error(error);
     res.status(400).send('Invalid request body');
   }
+});
+
+app.get('/signout', async (req, res) => {
+  console.log('Got a GET request');
+  res.clearCookie("token");
+  res.send("User has signed out");
+  console.log("User has signed out");
+});
+
+app.get('/check', async (req, res) => {
+  console.log('Got a GET request');
+  let check = checkToken(req)
+  res.send(check)
 });
 
 

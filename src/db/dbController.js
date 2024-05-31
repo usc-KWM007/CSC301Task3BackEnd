@@ -4,6 +4,7 @@
  */
 
 const {sql, checkTable } = require('./connection.js');
+const { generateUUID } = require('./encryption.js');
 
 /**
  * Run our prechecks on the database which includes checking if the 
@@ -34,14 +35,52 @@ let db = {
         console.log(res);
         return res;
     },
-    checkEmployee: async(data) => {
+    checkEmployeeEmail: async(data) => {
         console.log("checking employee");
-        const text = 'SELECT EXISTS(SELECT 1 FROM employees WHERE email=$1 AND password = $2)'
-        const values = [data.email, data.password];
+        const text = 'SELECT EXISTS(SELECT 1 FROM employees WHERE email=$1)'
+        const values = [data.email];
         const res = await sql.query(text, values)
         let exists = (res.rows[0].exists);
         return exists;
     },
+    getEmployeeCredentials: async(data) => {
+        console.log("getting employee");
+        const text = 'SELECT empid, password FROM employees WHERE email=$1'
+        const values = [data.email];
+        const res = await sql.query(text, values)
+        return res.rows[0];
+    },
+
+    getEmployeeIdNames: async() => {
+        console.log("getting employees and Ids");
+        const text = 'SELECT empid, firstname, lastname FROM employees'
+        const res = await sql.query(text)
+        return res.rows;
+    },
+
+    addTasks: async(data) => {
+        console.log("adding task");
+        const text = 'INSERT INTO tasks(taskid, taskname, taskdescription, tasklocation, taskduedate) VALUES($1, $2, $3, $4, $5) RETURNING *'
+        const values = [data.taskid, data.taskname, data.taskdescription, data.tasklocation, data.taskduedate];
+        const res = await sql.query(text,values)
+        console.log(data.taskEmployees)
+        for (i=0; i < data.taskEmployees.length; i++){
+            console.log(data.taskEmployees[i])
+            let assignid = generateUUID();
+
+            let text1 = 'INSERT INTO taskemployee(assignid, empid, taskid) VALUES($1, $2, $3) RETURNING *'
+            let values1 = [assignid, data.taskEmployees[i], data.taskid];
+            let res1 = await sql.query(text1,values1)
+        }
+        return res
+    },
+    getTasks: async() => {
+        console.log("getting tasks");
+        const text = 'SELECT * FROM tasks'
+        const res = await sql.query(text)
+        return res.rows[0];
+    },
+    
     /**
      * Updates an existing record in the database.
      * @param {Object} data - The data to be updated in the database.

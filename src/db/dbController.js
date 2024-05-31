@@ -76,9 +76,13 @@ let db = {
     },
     getTasks: async() => {
         console.log("getting tasks");
-        const text = 'SELECT * FROM tasks'
+        const text = 'SELECT taskid	taskname, taskdescription, tasklocation, taskduedate FROM tasks'
         const res = await sql.query(text)
-        return res.rows[0];
+        for (i=0; i < res.rows.length; i++){
+            //get the associated employees for each
+        }
+        console.log(res.rows)
+        return res.rows;
     },
     
     /**

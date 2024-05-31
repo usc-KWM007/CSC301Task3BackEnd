@@ -11,8 +11,10 @@ app.use(cookieParser(process.env.JWT_SECRET_KEY));
 
 app.use(express.json()); // Middleware to parse JSON bodies
 app.use(cors(
-  {origin: 'http://localhost:5173', 
-credentials: true}
+  {
+    origin: 'http://localhost:5173',
+    credentials: true
+  }
 )); //configure to only except few urls?
 
 //used to validate the token - needs to be done on all requests except login signup and signout
@@ -26,16 +28,20 @@ const checkToken = (req) => {
   }
 }
 
-app.get('/addTask', async(req,res) =>{
+app.get('/addTask', async (req, res) => {
+  try {
   let employees = await dbController.getEmployeeIdNames()
   res.send(employees);
+  } catch {
+    res.status(404).send('Failed to get employees');
+  }
 }
 );
 
-app.post('/addTask', async(req,res) =>{
+app.post('/addTask', async (req, res) => {
   console.log('Got a POST request');
-  console.log("heelloo")
-  console.log(req.body.taskname)
+  try {
+    console.log(req.body.taskname)
     let newUuid = generateUUID();
     let data = {
       taskid: newUuid,
@@ -44,23 +50,25 @@ app.post('/addTask', async(req,res) =>{
       tasklocation: req.body.tasklocation,
       taskduedate: req.body.taskduedate,
       taskEmployees: req.body.taskEmployees
-      
+
     };
     await dbController.addTasks(data)
     res.send('task added');
-  
-    //res.status(400).send('Invalid request body');
+  } catch {
+    res.status(400).send('Invalid request body');
   }
-  
+}
+
 );
 
-app.get('/dashboard', async(req,res) =>{
-  try{
-    await dbController.getTasks();
-    
-  } catch {
+app.get('/dashboard', async (req, res) => {
+  
+    let tasks = await dbController.getTasks();
+    res.send(tasks);
 
-  }
+  
+
+  
 
 });
 
@@ -110,7 +118,7 @@ app.post('/login', async (req, res) => {
         //generate and send JWT Token
         let email = data.email;
         const token = jwt.sign({ email }, process.env.JWT_SECRET_KEY);
-        res.cookie("token", token, { expiresIn: '1h'});
+        res.cookie("token", token, { expiresIn: '1h' });
         res.send(token);
         console.log("Someone Logged in")
 

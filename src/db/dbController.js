@@ -32,7 +32,6 @@ let db = {
         const text = 'INSERT INTO employees(empid, email, password, firstname, lastname, role) VALUES($1, $2, $3, $4, $5, $6) RETURNING *'
         const values = [data.empid, data.email, data.password, data.firstname, data.lastname, data.role];
         const res = await sql.query(text, values)
-        console.log(res);
         return res;
     },
     checkEmployeeEmail: async(data) => {
@@ -63,25 +62,29 @@ let db = {
         const text = 'INSERT INTO tasks(taskid, taskname, taskdescription, tasklocation, taskduedate) VALUES($1, $2, $3, $4, $5) RETURNING *'
         const values = [data.taskid, data.taskname, data.taskdescription, data.tasklocation, data.taskduedate];
         const res = await sql.query(text,values)
-        console.log(data.taskEmployees)
-        for (i=0; i < data.taskEmployees.length; i++){
-            console.log(data.taskEmployees[i])
-            let assignid = generateUUID();
 
-            let text1 = 'INSERT INTO taskemployee(assignid, empid, taskid) VALUES($1, $2, $3) RETURNING *'
-            let values1 = [assignid, data.taskEmployees[i], data.taskid];
-            let res1 = await sql.query(text1,values1)
+        if (data.taskEmployees.length > 0){
+            for (i=0; i < data.taskEmployees.length; i++){
+                let assignid = generateUUID();
+                let text1 = 'INSERT INTO taskemployee(assignid, empid, taskid) VALUES($1, $2, $3) RETURNING *'
+                let values1 = [assignid, data.taskEmployees[i], data.taskid];
+                let res1 = await sql.query(text1,values1)
+            }
         }
         return res
     },
     getTasks: async() => {
         console.log("getting tasks");
-        const text = 'SELECT taskid	taskname, taskdescription, tasklocation, taskduedate FROM tasks'
+        const text = 'SELECT taskid, taskname, taskdescription, tasklocation, taskduedate FROM tasks'
         const res = await sql.query(text)
+
         for (i=0; i < res.rows.length; i++){
             //get the associated employees for each
-        }
-        console.log(res.rows)
+            let text2 = 'SELECT taskemployee.empid, employees.firstname, employees.lastname FROM taskemployee INNER JOIN employees ON taskemployee.empid= employees.empid  WHERE taskemployee.taskid =$1'
+            let values2 = [res.rows[i].taskid];
+            let res2 = await sql.query(text2,values2)
+            res.rows[i].assignedEmployees = res2.rows;
+        }   
         return res.rows;
     },
     

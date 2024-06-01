@@ -41,7 +41,6 @@ app.get('/addTask', async (req, res) => {
 app.post('/addTask', async (req, res) => {
   console.log('Got a POST request');
   try {
-    console.log(req.body.taskname)
     let newUuid = generateUUID();
     let data = {
       taskid: newUuid,
@@ -62,14 +61,13 @@ app.post('/addTask', async (req, res) => {
 );
 
 app.get('/dashboard', async (req, res) => {
-  
+  console.log('Got a GET request');
+  try {
     let tasks = await dbController.getTasks();
     res.send(tasks);
-
-  
-
-  
-
+  } catch {
+    res.status(404).send('Failed to get employees');
+  }
 });
 
 

@@ -60,7 +60,11 @@ let db = {
     addTasks: async(data) => {
         console.log("adding task");
         const text = 'INSERT INTO tasks(taskid, taskname, taskdescription, tasklocation, taskduedate) VALUES($1, $2, $3, $4, $5) RETURNING *'
-        const values = [data.taskid, data.taskname, data.taskdescription, data.tasklocation, data.taskduedate];
+        let taskduedate = null;
+        if (data.taskduedate != ""){
+            taskduedate = data.taskduedate;
+        }
+        const values = [data.taskid, data.taskname, data.taskdescription, data.tasklocation, taskduedate];
         const res = await sql.query(text,values)
 
         if (data.taskEmployees.length > 0){
@@ -80,7 +84,7 @@ let db = {
 
         for (i=0; i < res.rows.length; i++){
             //get the associated employees for each
-            let text2 = 'SELECT taskemployee.empid, employees.firstname, employees.lastname FROM taskemployee INNER JOIN employees ON taskemployee.empid= employees.empid  WHERE taskemployee.taskid =$1'
+            let text2 = 'SELECT taskemployee.empid, employees.firstname, employees.lastname FROM taskemployee INNER JOIN employees ON taskemployee.empid= employees.empid WHERE taskemployee.taskid =$1'
             let values2 = [res.rows[i].taskid];
             let res2 = await sql.query(text2,values2)
             res.rows[i].assignedEmployees = res2.rows;

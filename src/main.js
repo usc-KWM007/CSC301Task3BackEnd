@@ -30,8 +30,8 @@ const checkToken = (req) => {
 
 app.get('/addTask', async (req, res) => {
   try {
-  let employees = await dbController.getEmployeeIdNames()
-  res.send(employees);
+    let employees = await dbController.getEmployeeIdNames()
+    res.send(employees);
   } catch {
     res.status(404).send('Failed to get employees');
   }
@@ -57,13 +57,13 @@ app.post('/addTask', async (req, res) => {
     res.status(400).send('Invalid request body');
   }
 }
-
 );
 
 app.get('/dashboard', async (req, res) => {
   console.log('Got a GET request');
   try {
-    let tasks = await dbController.getTasks();
+    console.log("one")
+    const tasks = await dbController.getTasks();
     res.send(tasks);
   } catch {
     res.status(404).send('Failed to get employees');

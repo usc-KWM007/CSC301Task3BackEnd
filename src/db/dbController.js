@@ -3,7 +3,7 @@
  * @module dbController
  */
 
-const {sql, checkTable } = require('./connection.js');
+const { sql, checkTable } = require('./connection.js');
 const { generateUUID } = require('./encryption.js');
 
 /**
@@ -27,14 +27,14 @@ let db = {
      * @param {Date} data.modified_at - The date when the task was last modified.
      * @returns {Promise<Object>} - The newly created record.
      */
-    createEmployee: async(data) => {
+    createEmployee: async (data) => {
         console.log("creating employee");
         const text = 'INSERT INTO employees(empid, email, password, firstname, lastname, role) VALUES($1, $2, $3, $4, $5, $6) RETURNING *'
         const values = [data.empid, data.email, data.password, data.firstname, data.lastname, data.role];
         const res = await sql.query(text, values)
         return res;
     },
-    checkEmployeeEmail: async(data) => {
+    checkEmployeeEmail: async (data) => {
         console.log("checking employee");
         const text = 'SELECT EXISTS(SELECT 1 FROM employees WHERE email=$1)'
         const values = [data.email];
@@ -42,7 +42,7 @@ let db = {
         let exists = (res.rows[0].exists);
         return exists;
     },
-    getEmployeeCredentials: async(data) => {
+    getEmployeeCredentials: async (data) => {
         console.log("getting employee");
         const text = 'SELECT empid, password FROM employees WHERE email=$1'
         const values = [data.email];
@@ -50,48 +50,90 @@ let db = {
         return res.rows[0];
     },
 
-    getEmployeeIdNames: async() => {
+    getEmployeeIdNames: async () => {
         console.log("getting employees and Ids");
         const text = 'SELECT empid, firstname, lastname FROM employees'
         const res = await sql.query(text)
         return res.rows;
     },
 
-    addTasks: async(data) => {
+    addTasks: async (data) => {
         console.log("adding task");
         const text = 'INSERT INTO tasks(taskid, taskname, taskdescription, tasklocation, taskduedate) VALUES($1, $2, $3, $4, $5) RETURNING *'
         let taskduedate = null;
-        if (data.taskduedate != ""){
+        if (data.taskduedate != "") {
             taskduedate = data.taskduedate;
         }
         const values = [data.taskid, data.taskname, data.taskdescription, data.tasklocation, taskduedate];
-        const res = await sql.query(text,values)
+        const res = await sql.query(text, values)
 
-        if (data.taskEmployees.length > 0){
-            for (i=0; i < data.taskEmployees.length; i++){
+        if (data.taskEmployees.length > 0) {
+            for (i = 0; i < data.taskEmployees.length; i++) {
                 let assignid = generateUUID();
                 let text1 = 'INSERT INTO taskemployee(assignid, empid, taskid) VALUES($1, $2, $3) RETURNING *'
                 let values1 = [assignid, data.taskEmployees[i], data.taskid];
-                let res1 = await sql.query(text1,values1)
+                let res1 = await sql.query(text1, values1)
             }
         }
         return res
     },
-    getTasks: async() => {
+
+    editTask: async (data) => {
+        console.log("editing task");
+        const text = 'UPDATE tasks SET taskname = $2, taskdescription = $3, tasklocation = $4, taskduedate = $5 WHERE taskid = $1';
+        let taskduedate = null;
+        if (data.taskduedate != "") {
+            taskduedate = data.taskduedate;
+        }
+        const values = [data.taskid, data.taskname, data.taskdescription, data.tasklocation, taskduedate];
+        const res = await sql.query(text, values)
+
+        //delete any previous employees
+        const text2 = 'DELETE FROM taskemployee WHERE taskid = $1';
+        const values2 = [data.taskid];
+        const res2 = await sql.query(text2, values2)
+
+        //if they exist add them back
+        if (data.taskEmployees.length > 0) {
+            for (i = 0; i < data.taskEmployees.length; i++) {
+                let assignid = generateUUID();
+                let text3 = 'INSERT INTO taskemployee(assignid, empid, taskid) VALUES($1, $2, $3) RETURNING *'
+                let values3 = [assignid, data.taskEmployees[i], data.taskid];
+                let res3 = await sql.query(text3, values3)
+            }
+        }
+        return res
+    },
+
+    deleteTask: async (data) => {
+        console.log("deleting task");
+        //delete any employees as they reference
+        const text2 = 'DELETE FROM taskemployee WHERE taskid = $1';
+        const values2 = [data];
+        const res2 = await sql.query(text2, values2)
+
+        const text = 'DELETE FROM tasks WHERE taskid = $1';
+        const values = [data]
+        const res = await sql.query(text, values)
+
+        return res
+    },
+
+    getTasks: async () => {
         console.log("getting tasks");
         const text = 'SELECT taskid, taskname, taskdescription, tasklocation, taskduedate FROM tasks'
         const res = await sql.query(text)
 
-        for (i=0; i < res.rows.length; i++){
+        for (i = 0; i < res.rows.length; i++) {
             //get the associated employees for each
             let text2 = 'SELECT taskemployee.empid, employees.firstname, employees.lastname FROM taskemployee INNER JOIN employees ON taskemployee.empid= employees.empid WHERE taskemployee.taskid =$1'
             let values2 = [res.rows[i].taskid];
-            let res2 = await sql.query(text2,values2)
+            let res2 = await sql.query(text2, values2)
             res.rows[i].assignedEmployees = res2.rows;
-        }   
+        }
         return res.rows;
     },
-    
+
     /**
      * Updates an existing record in the database.
      * @param {Object} data - The data to be updated in the database.

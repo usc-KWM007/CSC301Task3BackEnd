@@ -59,10 +59,41 @@ app.post('/addTask', async (req, res) => {
 }
 );
 
+app.put('/editTask', async (req, res) => {
+  console.log('Got a PUT request');
+  try {
+    let data = {
+      taskid: req.body.taskid,
+      taskname: req.body.taskname,
+      taskdescription: req.body.taskdescription,
+      tasklocation: req.body.tasklocation,
+      taskduedate: req.body.taskduedate,
+      taskEmployees: req.body.taskEmployees
+
+    };
+    await dbController.editTask(data)
+    res.send('task edit added');
+  } catch {
+    res.status(400).send('Invalid request body');
+  }
+}
+);
+
+app.delete('/dashboard', async (req, res) => {
+  console.log('Got a DELETE request');
+  try {
+    let data = req.body.taskData;
+    await dbController.deleteTask(data)
+    res.send('task deleted');
+  } catch {
+    res.status(400).send('Invalid request body');
+  }
+}
+);
+
 app.get('/dashboard', async (req, res) => {
   console.log('Got a GET request');
   try {
-    console.log("one")
     const tasks = await dbController.getTasks();
     res.send(tasks);
   } catch {

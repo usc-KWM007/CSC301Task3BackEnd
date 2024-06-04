@@ -105,6 +105,21 @@ let db = {
         return res
     },
 
+    editAccount: async (data) => {
+        console.log("editing account");
+        let res
+        if(data.password == null){ //if user is updating password or not
+            const text = 'UPDATE employees SET firstname = $2, lastname = $3, role = $4 WHERE email = $1';
+            const values = [data.email, data.firstname, data.lastname, data.role];
+            res = await sql.query(text, values)
+        } else{
+            const text = 'UPDATE employees SET password = $2, firstname = $3, lastname = $4, role = $5 WHERE email = $1';
+            const values = [data.email, data.password, data.firstname, data.lastname, data.role];
+            res = await sql.query(text, values)
+        }
+        return res
+    },
+
     deleteTask: async (data) => {
         console.log("deleting task");
         //delete any employees as they reference
@@ -132,6 +147,14 @@ let db = {
             res.rows[i].assignedEmployees = res2.rows;
         }
         return res.rows;
+    },
+
+    getAccountData: async (email) => {
+        console.log("getting account details");
+        const text = 'SELECT email, firstname, lastname, role FROM employees WHERE email=$1'
+        const values = [email];
+        const res = await sql.query(text, values)
+        return res.rows[0];
     },
 
     /**

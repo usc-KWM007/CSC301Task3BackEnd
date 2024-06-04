@@ -47,9 +47,9 @@ app.get('/addTask', async (req, res) => {
 app.get('/loggedIn', async (req, res) => {
   try {
     const check = checkToken(req);
-    if (check){
+    if (check) {
       res.status(200).send('User is authenticated');
-    } else{
+    } else {
       res.status(401).send('User is not authenticated');
     }
   } catch {
@@ -180,16 +180,17 @@ app.post('/login', async (req, res) => {
         //generate and send JWT Token
         let email = data.email;
         const token = jwt.sign({ email }, process.env.JWT_SECRET_KEY);
-        res.cookie("token", token, { httpOnly: true, maxAge: 60*60*1000, sameSite: "none", secure: true });
+        res.cookie("token", token, { httpOnly: true, maxAge: 60 * 60 * 1000, sameSite: "none", secure: true });
         console.log("Someone Logged in")
         res.status(200)
         res.send("Logged in")
 
       } else {
-        res.send("Incorrect Password")
+        res.status(401).send("Incorrect Password")
+
       }
     } else {
-      res.send("Email does not exists")
+      res.status(401).send("Email does not exists")
     }
   } catch (error) {
     console.error(error);
@@ -204,6 +205,52 @@ app.get('/signOut', async (req, res) => {
   console.log("User has signed out");
 });
 
+app.get('/settings', async (req, res) => {
+  console.log('Got a GET request');
+  try {
+    let cookies = req.cookies;
+    let data = jwt.verify(cookies.token, process.env.JWT_SECRET_KEY);
+    const accountData = await dbController.getAccountData(data.email);
+    res.status(200).send(accountData);
+  } catch {
+    res.status(404).send('Failed to get account data');
+  }
+});
+
+app.put('/settings', async (req, res) => {
+  console.log('Got a PUT request');
+  try {
+    let data = {
+      email: req.body.email,
+      password: req.body.password,
+      firstname: req.body.firstname,
+      lastname: req.body.lastname,
+      role: req.body.role
+    };
+    console.log(data)
+    let cookies = req.cookies;
+    let cookieData = jwt.verify(cookies.token, process.env.JWT_SECRET_KEY);
+
+    if (cookieData.email != data.email) {
+      throw error
+    }
+    let employeeCredentials = await dbController.getEmployeeCredentials(data);
+    //check if new password is entered by first checking if its the same or null as teh old password
+    if (data.password == "" || encryptPassword(data.password, employeeCredentials.empid) == employeeCredentials.password) {
+      data.password = null
+    } else {
+      data.password = encryptPassword(data.password, employeeCredentials.empid)
+    }
+    console.log(data)
+    await dbController.editAccount(data);
+    res.status(200).send("Updated Account");
+  } catch {
+    res.status(404).send('Failed to update account data');
+  }
+});
+
+
+//delete this?
 app.get('/check', async (req, res) => {
   console.log('Got a GET request');
   let check = checkToken(req)

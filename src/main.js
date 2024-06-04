@@ -46,28 +46,22 @@ app.get('/addTask', async (req, res) => {
 
 app.get('/loggedIn', async (req, res) => {
   try {
-    console.log(checkToken(req))
     const check = checkToken(req);
     if (check){
       res.status(200).send('User is authenticated');
     } else{
       res.status(401).send('User is not authenticated');
     }
-    
   } catch {
-    res.status(404).send('Failed to get employees');
+    res.status(404).send('Failed to login');
   }
 }
 );
 
 app.get('/signOut', async (req, res) => {
   try {
-    console.log(req.cookies)
-    res.clearCookie('token')
+    res.clearCookie('token', { httpOnly: true, sameSite: "none", secure: true })
     res.status(202).send("signed out")
-    console.log(res)
-    
-    
   } catch {
     res.status(404).send('Failed to sign out');
   }
@@ -130,7 +124,6 @@ app.delete('/dashboard', async (req, res) => {
 
 app.get('/dashboard', async (req, res) => {
   console.log('Got a GET request');
-  console.log(req);
   try {
     const tasks = await dbController.getTasks();
     res.send(tasks);
@@ -187,8 +180,7 @@ app.post('/login', async (req, res) => {
         //generate and send JWT Token
         let email = data.email;
         const token = jwt.sign({ email }, process.env.JWT_SECRET_KEY);
-        //res.cookie("token", token, { httpOnly: true, expiresIn: '1h', sameSite:'strict'});
-        res.cookie("token", token, { httpOnly: true, expiresIn: '1h', sameSite: "none", secure: true });
+        res.cookie("token", token, { httpOnly: true, maxAge: 60*60*1000, sameSite: "none", secure: true });
         console.log("Someone Logged in")
         res.status(200)
         res.send("Logged in")

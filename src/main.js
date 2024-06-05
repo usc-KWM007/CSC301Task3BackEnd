@@ -34,11 +34,12 @@ const checkToken = (req) => {
   }
 }
 
-app.get('/addTask', async (req, res) => {
+app.get('/getEmployees', async (req, res) => {
   try {
     let employees = await dbController.getEmployeeIdNames()
-    res.send(employees);
-  } catch {
+    res.status(200).send(employees);
+  } catch (error) {
+    console.log(error)
     res.status(404).send('Failed to get employees');
   }
 }
@@ -50,9 +51,10 @@ app.get('/loggedIn', async (req, res) => {
     if (check) {
       res.status(200).send('User is authenticated');
     } else {
-      res.status(401).send('User is not authenticated');
+      res.status(200).send('User is not authenticated');
     }
-  } catch {
+  } catch (error) {
+    console.log(error)
     res.status(404).send('Failed to login');
   }
 }
@@ -62,7 +64,8 @@ app.get('/signOut', async (req, res) => {
   try {
     res.clearCookie('token', { httpOnly: true, sameSite: "none", secure: true })
     res.status(202).send("signed out")
-  } catch {
+  } catch (error) {
+    console.log(error)
     res.status(404).send('Failed to sign out');
   }
 }
@@ -83,8 +86,9 @@ app.post('/addTask', async (req, res) => {
 
     };
     await dbController.addTasks(data)
-    res.send('task added');
-  } catch {
+    res.status(200).send('Task added');
+  } catch (error) {
+    console.log(error)
     res.status(400).send('Invalid request body');
   }
 }
@@ -103,9 +107,10 @@ app.put('/editTask', async (req, res) => {
 
     };
     await dbController.editTask(data)
-    res.send('task edit added');
-  } catch {
-    res.status(400).send('Invalid request body');
+    res.status(200).send('Task edit added');
+  } catch (error) {
+    console.log(error)
+    res.status(400).send('Failed to edit task');
   }
 }
 );
@@ -115,9 +120,10 @@ app.delete('/dashboard', async (req, res) => {
   try {
     let data = req.body.taskData;
     await dbController.deleteTask(data)
-    res.send('task deleted');
-  } catch {
-    res.status(400).send('Invalid request body');
+    res.status(200).send('Task Deleted');
+  } catch (error) {
+    console.log(error)
+    res.status(404).send('Failed to delete task');
   }
 }
 );
@@ -126,17 +132,17 @@ app.get('/dashboard', async (req, res) => {
   console.log('Got a GET request');
   try {
     const tasks = await dbController.getTasks();
-    res.send(tasks);
-  } catch {
-    res.status(404).send('Failed to get employees');
+    res.status(200).send(tasks);
+  } catch (error) {
+    console.log(error)
+    res.status(404).send('Failed to get tasks');
   }
 });
 
 
 app.post('/signup', async (req, res) => {
-  console.log('Got a POST request');
+  console.log('Got a Sign Up POST request');
   try {
-    //const validatedData = await todoSchema.validateAsync(req.body);
     /** @type {Types.TaskData} */
     let newUuid = generateUUID();
     let data = {
@@ -147,10 +153,17 @@ app.post('/signup', async (req, res) => {
       lastname: req.body.lastname,
       role: req.body.role
     };
+
+    const emailExists = await dbController.checkEmployeeEmail(data)
+    if (emailExists) {
+      res.status(400).send('Email already exists');
+      return
+    }
+
     await dbController.createEmployee(data);
-    res.send('You are registered');
+    res.status(200).send('You are registered');
   } catch (error) {
-    console.error(error);
+    console.log(error);
     res.status(400).send('Invalid request body');
   }
 });
@@ -193,7 +206,7 @@ app.post('/login', async (req, res) => {
       res.status(401).send("Email does not exists")
     }
   } catch (error) {
-    console.error(error);
+    console.log(error);
     res.status(400).send('Invalid request body');
   }
 });
@@ -212,7 +225,8 @@ app.get('/settings', async (req, res) => {
     let data = jwt.verify(cookies.token, process.env.JWT_SECRET_KEY);
     const accountData = await dbController.getAccountData(data.email);
     res.status(200).send(accountData);
-  } catch {
+  } catch (error) {
+    console.log(error);
     res.status(404).send('Failed to get account data');
   }
 });
@@ -227,7 +241,6 @@ app.put('/settings', async (req, res) => {
       lastname: req.body.lastname,
       role: req.body.role
     };
-    console.log(data)
     let cookies = req.cookies;
     let cookieData = jwt.verify(cookies.token, process.env.JWT_SECRET_KEY);
 
@@ -244,8 +257,9 @@ app.put('/settings', async (req, res) => {
     console.log(data)
     await dbController.editAccount(data);
     res.status(200).send("Updated Account");
-  } catch {
-    res.status(404).send('Failed to update account data');
+  } catch(error) {
+    console.log(error);
+    res.status(400).send('Failed to update account data');
   }
 });
 

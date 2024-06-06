@@ -128,6 +128,20 @@ app.delete('/dashboard', async (req, res) => {
 }
 );
 
+app.delete('/settings', async (req, res) => {
+  console.log('Got a DELETE request');
+  try {
+    let email = req.body.email;
+    let employeeCredentials = await dbController.getEmployeeCredentials(email);
+    await dbController.deleteAccount(employeeCredentials.empid)
+    res.status(200).send('Account Deleted');
+  } catch (error) {
+    console.log(error)
+    res.status(404).send('Failed to delete account');
+  }
+}
+);
+
 app.get('/dashboard', async (req, res) => {
   console.log('Got a GET request');
   try {
@@ -184,7 +198,7 @@ app.post('/login', async (req, res) => {
     let dbResponse = await dbController.checkEmployeeEmail(data);
     if (dbResponse) {
       //get the uuid and encrypted password
-      let employeeCredentials = await dbController.getEmployeeCredentials(data);
+      let employeeCredentials = await dbController.getEmployeeCredentials(data.email);
       //check plain password to encrypted password
       let passwordCheck = checkPassword(data.password, employeeCredentials.empid, employeeCredentials.password)
 
@@ -247,7 +261,7 @@ app.put('/settings', async (req, res) => {
     if (cookieData.email != data.email) {
       throw error
     }
-    let employeeCredentials = await dbController.getEmployeeCredentials(data);
+    let employeeCredentials = await dbController.getEmployeeCredentials(data.email);
     //check if new password is entered by first checking if its the same or null as teh old password
     if (data.password == "" || encryptPassword(data.password, employeeCredentials.empid) == employeeCredentials.password) {
       data.password = null

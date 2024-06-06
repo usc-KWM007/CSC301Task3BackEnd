@@ -9,7 +9,6 @@ function generateUUID(){
 function encryptPassword(password, uuid){
     try{
         let encryptPassword = crypto.createHmac('sha256', uuid).update(password).digest('hex')
-        console.log(encryptPassword)
         return encryptPassword
     }
     catch(e){

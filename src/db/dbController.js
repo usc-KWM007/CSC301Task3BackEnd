@@ -42,10 +42,10 @@ let db = {
         let exists = (res.rows[0].exists);
         return exists;
     },
-    getEmployeeCredentials: async (data) => {
+    getEmployeeCredentials: async (email) => {
         console.log("getting employee");
         const text = 'SELECT empid, password FROM employees WHERE email=$1'
-        const values = [data.email];
+        const values = [email];
         const res = await sql.query(text, values)
         return res.rows[0];
     },
@@ -119,6 +119,20 @@ let db = {
         }
         return res
     },
+    deleteAccount: async (data) => {
+        console.log("deleting account");
+
+        //delete any employees as they reference
+        const text2 = 'DELETE FROM taskemployee WHERE empid = $1';
+        const values2 = [data];
+        const res2 = await sql.query(text2, values2)
+
+        const text = 'DELETE FROM employees WHERE empid = $1';
+        const values = [data]
+        const res = await sql.query(text, values)
+
+        return res
+    },
 
     deleteTask: async (data) => {
         console.log("deleting task");
@@ -133,6 +147,7 @@ let db = {
 
         return res
     },
+
 
     getTasks: async () => {
         console.log("getting tasks");
